@@ -81,26 +81,29 @@ function buildDataGroups() {
     keys = Object.keys(data);
 }
 
-// Render flashcards grouped by date
 function renderFlashcards() {
     const container = document.getElementById('cardsContainer');
+    // 按日期、再按中文释义收集同义词
     const groupsByDate = {};
-    wordList.forEach(word => {
-        const date = word.date || '未指定日期';
-        if (!groupsByDate[date]) groupsByDate[date] = [];
-        groupsByDate[date].push(word);
+    wordList.forEach(item => {
+        const date = item.date || '未指定日期';
+        const meaning = item.chinese;
+        const eng = item.english;
+        if (!groupsByDate[date]) groupsByDate[date] = {};
+        if (!groupsByDate[date][meaning]) groupsByDate[date][meaning] = new Set();
+        groupsByDate[date][meaning].add(eng);
     });
-    const dates = Object.keys(groupsByDate).sort((a, b) => b.localeCompare(a));
+
+    const dates = Object.keys(groupsByDate).sort((a,b) => b.localeCompare(a));
     let html = '';
     dates.forEach(date => {
-        const words = groupsByDate[date];
-        words.sort((a, b) => (a.scoreValue ?? 0) - (b.scoreValue ?? 0));
         html += `<div class="card"><strong>${date}</strong><br>`;
-        words.forEach((w, idx) => {
-            const color = getColor(w.scoreValue ?? 0);
-            html += `<span style="color:${color}">${w.english}</span> - ${w.chinese}`;
-            if (idx < words.length - 1) html += '<br>';
+        const meanings = groupsByDate[date];
+        const lines = Object.entries(meanings).map(([meaning, engSet]) => {
+            const syns = Array.from(engSet).join('=');
+            return `${syns} —— ${meaning}`;
         });
+        html += lines.join('<br>');
         html += `</div>`;
     });
     container.innerHTML = html;
@@ -482,3 +485,5 @@ function currentDateString() {
     const day = d.getDate().toString().padStart(2,'0');
     return `${d.getFullYear()}-${month}-${day}`;
 }
+
+window.addEventListener('load', loadUserData);
