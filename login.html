@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login/Register</title>
+    <style>
+        body { font-family: Arial; padding: 2em; max-width: 400px; margin: auto; }
+        input, button { display: block; width: 100%; margin-bottom: 1em; padding: 0.5em; }
+    </style>
+</head>
+<body>
+<h2>Login / Register</h2>
+<input type="text" id="username" placeholder="Username" required>
+<input type="password" id="password" placeholder="Password" required>
+<button onclick="login()">Login</button>
+<button onclick="register()">Register</button>
+
+<p id="message" style="color:red;"></p>
+
+<script>
+    const API_URL = 'https://68912b50447ff4f11fbbe7a1.mockapi.io/users';  // MockAPI 用户资源
+    // 初始单词数据，每组30个词条（两个英文单词和一个中文释义）
+    const wordGroups = [
+        [["succumb to","yield to","屈服于"], ["singular","unique","独特的"], ["exaggeration","hyperbole","夸张"], ["prescient","prophetic","有先见之明的"], ["realism","verisimilitude","现实主义"], ["irascibility","exasperation","肝火"], ["extremist","zealot","极端主义者"], ["intricate","convoluted","复杂的"], ["fairness","objectivity","公平；公正；公道"], ["unwarranted","groundless","毫无根据的"], ["affable","easygoing","和蔼可亲的"], ["realize","achieve","实现"], ["diffuse","spread","扩散"], ["baseless","untenable","毫无根据的"], ["proclaim","profess","宣布"], ["pugnacious","truculent","好斗的"], ["stave off","forestall","阻止"], ["momentary","evanescent","短暂的"], ["belie","mask","掩饰"], ["yield","engender","产生"], ["limpid","pellucid","清澈的"], ["interdependent","interrelated","相互依赖的"], ["prevalent","widespread","流行"], ["undermine","impair","破坏"], ["original","novel","原来的"], ["rejection of","liberation from","对……的否定"], ["confused","muddled","困惑的"], ["expansion","augmentation","扩张"], ["exalt","valorize","赞美"], ["lull","respite","平息"]],
+        [["gratify","please","使满意"], ["cumbersome","unwieldy","笨重的"], ["fractious","restive","脾气暴躁的"], ["snag","hitch","障碍物"], ["adaptability","flexibility","适应性"], ["galvanize","animate","激励"], ["utilitarian","functional","实用的"], ["quiescence","calm","静止"], ["elicit","draw","引出"], ["primitive","rudimentary","原始的"], ["accession to","acquiescence to","加入"], ["somnolent","lethargic","昏昏欲睡的"], ["inferable from","entailed by","可由……推断出"], ["decay","deterioration","衰退"], ["shackle","stifle","束缚"], ["repudiate","recant","拒绝"], ["encomium","tribute","赞辞"], ["unostentatious","modest","低调的"], ["dangerous","perilous","危险的"], ["speculation","conjecture","猜测"], ["disparity","variance","差异"], ["abuse","misuse","滥用"], ["respite","relief","暂缓"], ["portend","predict","预示"], ["pristine","unblemished","原始的"], ["lugubrious","gloomy","悲伤的"], ["heterogeneity","diversity","多样性"], ["champion","defend","支持"], ["sidestep","circumvent","回避"], ["mockery","derision","嘲弄"]],
+        [["burgeoning","expansion","迅速发展的"], ["presage","portend","预示"], ["heterogeneous","dissimilar","异质的"], ["extirpate","eliminate","根除"], ["deflate","soothe","使泄气"], ["harmless","innocuous","无害的"], ["familiar","recognizable","熟悉的"], ["loquacious","garrulous","话多的"], ["restorative","tonic","恢复性的"], ["prevent","preclude","预防"], ["shriek","caterwaul","尖叫"], ["anticipate","prefigure","预期"], ["generic","inclusive","通用的"], ["defy","disregard","违抗"], ["anonymous","obscure","匿名的"], ["recycle","rehash","再利用"], ["malfeasance","fraudulence","不法行为"], ["abstraction","generality","抽象"], ["decisive","unmistakable","决定性的"], ["capture","secure","捕获"], ["malodorous","noisome","恶臭的"], ["prominence","salience","显著"], ["pecuniary","economic","金钱的"], ["wane","decline","衰落"], ["slight","disparage","轻微的"], ["gainsay","dispute","否认"], ["conform to","square with","符合"], ["sluggish","dilatory","迟缓的"], ["simplicity","artlessness","简单"], ["confined","circumscribed","受限制的"]],
+        [["constrain","deter","约束"], ["detracting","deprecatory","贬低的"], ["purposefulness","design","有目的性"], ["hamper","impede","阻碍"], ["impede","hamper","妨碍"], ["haphazardly","randomly","随意地"], ["capricious","unpredictable","反复无常的"], ["foundation","inception","基础"], ["diminutive","minuscule","极小的"], ["scarcely","hardly","几乎不"], ["obtain","glean","获得"], ["coherent","orderly","连贯的"], ["vitiate","impair","损害"], ["porous","permeable","多孔的"], ["homogeneity","resemblance","同质性"], ["unfamiliarity","ignorance","不熟悉"], ["unalloyed","unqualified","纯粹的"], ["denounce","lambaste","谴责"], ["tortuous","convoluted","曲折的"], ["burdensome","onerous","繁重的"], ["inconstant","capricious","多变的"], ["plethora","surfeit","过剩"], ["triumph","success","胜利"], ["unorthodox","unconventional","非正统的"], ["altruistic","benevolent","无私的"], ["favorable","auspicious","有利的"], ["cursory","casual","粗略的"], ["rudimentary","embryonic","基础的"], ["maturity","precociousness","成熟"], ["kinfolk","relative","亲属"]],
+        [["unlinked","estranged","未连接的"], ["paucity","dearth","匮乏的"], ["perplexing","enigmatic","令人困惑的"], ["protean","versatile","千变万化的"], ["glut","surfeit","过剩"], ["relic","vestige","遗迹"], ["humility","modesty","谦逊"], ["waning","ebbing","衰弱的"], ["quiescent","abeyant","静止的"], ["venerate","honor","崇敬"], ["exhaustive","comprehensive","详尽的"], ["laconic","taciturn","简洁的"], ["hail","acclaim","称赞"], ["tactless","impolitic","不得体的"], ["eliminate","put to rest","消除"], ["demand","exact","需求"], ["controversial","provocative","有争议的"], ["eclipse","outdo","使相形见绌"], ["unconstrained","free","不受限制的"], ["approbation","adulation","赞誉"], ["opprobrium","disdain","公开谴责"], ["panacea","remedy","万灵药"], ["contingent","circumstantial","依情况而定的"], ["spurious","specious","虚假的"], ["short-lived","ephemeral","短暂的"], ["naïve","unsophisticated","天真的"], ["solidarity","camaraderie","团结"], ["obtrusive","conspicuous","显眼的"], ["secure","earn","获得"], ["origin","provenance","起源"]],
+        [["mitigate","abate","缓和"], ["artificial","spurious","人工的"], ["dissemblance","duplicity","伪装"], ["self-interest","opportunism","私利"], ["resonate","ring true","产生共鸣"], ["tenacity","resolve","坚韧"], ["capricious","impulsive","任性"], ["adept at","proficient in","擅长"], ["spirited","vigorous","有精神的"], ["alarm","unsettle","惊慌"], ["temperate","dispassionate","温和的"], ["amazing","wondrous","惊奇的"], ["trivial","inessential","琐碎的"], ["denunciation","indictment","谴责"], ["neutrality","impartiality","中立"], ["obscure","unknown","模糊的"], ["perennial","long-standing","长期的"], ["verbose","long-winded","冗长的"], ["temper","moderate","调节"], ["canned","formulaic","套路化的"], ["obsolete","outmoded","过时的"], ["inexplicable","incomprehensible","无法解释的"], ["experimental","innovative","实验性的"], ["veneration","reverence","崇敬"], ["perceptive","discerning","有洞察力的"], ["unabated","undiminished","不减弱的"], ["regular","(无中文)","常规的"], ["imitate","emulate","模仿"], ["shrewd","canny","精明的"], ["discrepancies","incongruities","不一致"]]
+    ];
+
+    async function login() {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const msg = document.getElementById("message");
+
+        try {
+            const res = await fetch(`${API_URL}?username=${username}`);
+            const users = await res.json();
+            if (users.length === 0 || users[0].password !== password) {
+                msg.textContent = "Invalid username or password.";
+                return;
+            }
+            localStorage.setItem("user", JSON.stringify(users[0]));
+            location.href = "index.html";
+        } catch (e) {
+            msg.textContent = "Login failed.";
+            console.error(e);
+        }
+    }
+
+    async function register() {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const msg = document.getElementById("message");
+
+        if (!username || !password) {
+            msg.textContent = "请输入用户名和密码";
+            return;
+        }
+
+        let existing = [];
+        try {
+            const checkRes = await fetch(`${API_URL}?username=${username}`);
+            if (checkRes.ok) {
+                const result = await checkRes.json();
+                existing = Array.isArray(result) ? result : [];
+            } else if (checkRes.status !== 404) {
+                throw new Error(`用户检查失败，状态码：${checkRes.status}`);
+            }
+        } catch (e) {
+            msg.textContent = "无法连接服务器，检查用户名失败。";
+            console.error("用户查重失败：", e);
+            return;
+        }
+
+        if (existing.some(u => u.username === username)) {
+            msg.textContent = "用户名已存在，请更换。";
+            return;
+        }
+
+        // Prepare initial word list data for new user
+        const allWordsList = [];
+        wordGroups.forEach((group, gi) => {
+            const dateLabel = `第${(gi+1).toString().padStart(2,'0')}组`;
+            group.forEach(triple => {
+                const [w1, w2, meaning] = triple;
+                allWordsList.push({ english: w1, chinese: meaning, scoreValue: 0, date: dateLabel });
+                allWordsList.push({ english: w2, chinese: meaning, scoreValue: 0, date: dateLabel });
+            });
+        });
+
+        const userObj = {
+            username,
+            password,
+            word_list: allWordsList,
+            Wrong_list: []
+        };
+
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userObj)
+            });
+            if (!res.ok) {
+                throw new Error(`注册失败，状态码：${res.status}`);
+            }
+            const newUser = await res.json();
+            localStorage.setItem("user", JSON.stringify(newUser));
+            location.href = "index.html";
+        } catch (e) {
+            msg.textContent = "注册失败，请稍后再试。";
+            console.error("注册提交失败：", e);
+        }
+    }
+</script>
+</body>
+</html>
