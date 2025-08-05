@@ -337,84 +337,157 @@ async function updateScoreGroup(g, delta) {
 }
 
 // 记录错题并保存
+// —— 替换记录错题的函数（若仍使用） ——
 async function recordWrongGroup(g) {
-    if (!wrongList.some(x=>x.english1===g.english1 && x.english2===g.english2)) {
+    if (!wrongList.find(x=>x.english1===g.english1 && x.english2===g.english2)) {
         wrongList.push(g);
         renderWrongCards();
         await saveUserData();
     }
 }
 
+
 // 在 script.js 中任意位置（在其它函数定义之后）添加：
 
 /**
  * 切换到“错题”标签页并开始第一题复习
  */
-function startWrongReview() {
-    // 切换到错题 Tab
+// —— 切换到“错题”Tab 并开始复习 ——
+async function startWrongReview() {
     switchTab('wrong');
-    // 清空旧题目展示区
-    document.getElementById('wrongArea').innerHTML = '';
-    // 重置索引
+    document.getElementById('wrongCards').style.display = 'none';
     currentIndex = 0;
-    // 直接渲染第一道错题
     nextWrong();
 }
 
-/**
- * 渲染下一道错题（如果需要按组处理就修改这里的逻辑）
- */
+// —— 渲染下一道错题 ——
 function nextWrong() {
     const area = document.getElementById('wrongArea');
     area.innerHTML = '';
+
     if (currentIndex >= wrongList.length) {
-        area.innerHTML = '<p>错题练习结束。</p>';
+        area.innerHTML = '<p>错题练习结束！</p>';
         return;
     }
+
     const g = wrongList[currentIndex];
-    // 下面以“记忆模式”举例，直接给中文 + 6 英文供选
     const correct = [g.english1, g.english2];
+
     // 取两组干扰
-    const others = groupList.filter(x=>x!==g).sort(()=>Math.random()-0.5).slice(0,2);
-    const distractors = others.flatMap(x=>[x.english1,x.english2]);
-    const choices = correct.concat(distractors).sort(()=>Math.random()-0.5);
+    const distractors = groupList
+        .filter(x => x !== g)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 2)
+        .flatMap(x => [x.english1, x.english2])
+        .slice(0, 4);
+
+    // 随机打乱 6 个选项
+    const choices = correct.concat(distractors).sort(() => Math.random() - 0.5);
 
     let html = `<div class="card">
     <div>错题 ${currentIndex+1} / ${wrongList.length}</div>
     <div class="chinese-options"><strong>${g.chinese}</strong></div>
     <div class="english-options">`;
-    choices.forEach(w=>{
+    choices.forEach(w => {
         html += `<label><input type="checkbox" name="wrong_eng" value="${w}"> ${w}</label><br>`;
     });
     html += `</div>
-    <button onclick="submitWrong()">提交</button>
-    <button onclick="nextWrong()">下一题</button>
+    <button id="submitWrongBtn" onclick="submitWrong()">提交</button>
+    <button id="giveUpWrongBtn" onclick="giveUpWrong()">我不会</button>
+    <button id="nextWrongBtn" onclick="nextWrong()" style="display:none;">下一题</button>
   </div>`;
+
     area.innerHTML = html;
 }
 
-// 处理错题模式下的提交（示例）
+// —— 用户提交答案 ——
 async function submitWrong() {
     const g = wrongList[currentIndex];
-    const chosen = Array.from(
+    const chosenEng = Array.from(
         document.querySelectorAll('input[name="wrong_eng"]:checked')
-    ).map(i=>i.value);
-    const correct = [g.english1, g.english2].slice().sort();
-    const isOk = chosen.slice().sort().join() === correct.join();
+    ).map(i => i.value);
 
-    if (!isOk) {
-        // 如果还是答错，就不重复加入
-        await recordWrongGroup(g);
-    } else {
-        // 如果答对了，就从 wrongList 中移除
-        wrongList.splice(currentIndex, 1);
-        await saveUserData();
-        currentIndex--; // 保持当前位置
+    // Check length
+    if (chosenEng.length !== 2) {
+        alert('请选择两个英文选项');
+        return;
     }
 
-    // 直接进入下一题
-    nextWrong();
+    const correctEng = [g.english1, g.english2].slice().sort();
+    const isOk = chosenEng.slice().sort().join() === correctEng.join();
+
+    // 禁用选项和按钮
+    document.querySelectorAll('input[name="wrong_eng"]').forEach(i => i.disabled = true);
+    document.getElementById('submitWrongBtn').style.display = 'none';
+    document.getElementById('giveUpWrongBtn').style.display = 'none';
+
+    // 对/错处理
+    if (isOk) {
+        // 回合得分 +1
+        await updateScoreGroup(g, 1);
+        // 从错题集中移除，不推进 currentIndex
+        wrongList.splice(currentIndex, 1);
+        await saveUserData();
+    } else {
+        // 回合扣分 -1
+        await updateScoreGroup(g, -1);
+        // 已经在 wrongList，无需重复添加
+    }
+
+    // 高亮正确答案，并显示中文释义
+    document.querySelectorAll('.english-options label').forEach(lbl => {
+        const w = lbl.querySelector('input').value;
+        lbl.innerHTML += ` — ${wordMap[w]}`;
+        if (correctEng.includes(w)) {
+            lbl.style.background = '#c8f7c5';
+        } else if (chosenEng.includes(w)) {
+            lbl.style.background = '#f8d7da';
+        }
+    });
+
+    // 如果答对了，被移除了则 currentIndex 保持原来位置，
+    // 如果答错了，currentIndex++ 留到下一题
+    if (!isOk) currentIndex++;
+
+    // 显示“下一题”
+    document.getElementById('nextWrongBtn').style.display = 'inline';
 }
+
+// —— “我不会” 直接当成错题 ——
+async function giveUpWrong() {
+    const g = wrongList[currentIndex];
+    const correctEng = [g.english1, g.english2].slice().sort();
+
+    // 禁用选项和按钮
+    document.querySelectorAll('input[name="wrong_eng"]').forEach(i => i.disabled = true);
+    document.getElementById('submitWrongBtn').style.display = 'none';
+    document.getElementById('giveUpWrongBtn').style.display = 'none';
+
+    // 记为错题并扣分
+    await updateScoreGroup(g, -1);
+
+    // 高亮正确答案
+    document.querySelectorAll('.english-options label').forEach(lbl => {
+        const w = lbl.querySelector('input').value;
+        lbl.innerHTML += ` — ${wordMap[w]}`;
+        if (correctEng.includes(w)) {
+            lbl.style.background = '#c8f7c5';
+        }
+    });
+
+    // 推进到下一题索引
+    currentIndex++;
+    document.getElementById('nextWrongBtn').style.display = 'inline';
+}
+
+// —— 替换更新分数 & 保存的函数 ——
+async function updateScoreGroup(g, delta) {
+    g.scoreValue = (g.scoreValue || 0) + delta;
+    renderFlashcards();
+    await saveUserData();
+}
+
+
 
 // script.js 末尾，紧跟函数定义后面加上：
 window.startWrongReview = startWrongReview;
