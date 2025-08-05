@@ -344,3 +344,17 @@ async function recordWrongGroup(g) {
         await saveUserData();
     }
 }
+// script.js 末尾，紧跟函数定义后面加上：
+window.startWrongReview = startWrongReview;
+window.nextWrong        = nextWrong;
+window.submitWrong      = submitWrong;
+
+// 如果你在记忆/困难模式也用了 onclick，也一起暴露
+window.startQuiz        = startQuiz;
+window.nextMemory       = nextMemory;
+window.submitMemory     = submitMemory;
+window.giveUpMemory     = giveUpMemory;
+window.nextHard         = nextHard;
+window.submitHard       = submitHard;
+window.giveUpHard       = giveUpHard;
+window.switchTab        = switchTab;
