@@ -344,6 +344,78 @@ async function recordWrongGroup(g) {
         await saveUserData();
     }
 }
+
+// 在 script.js 中任意位置（在其它函数定义之后）添加：
+
+/**
+ * 切换到“错题”标签页并开始第一题复习
+ */
+function startWrongReview() {
+    // 切换到错题 Tab
+    switchTab('wrong');
+    // 清空旧题目展示区
+    document.getElementById('wrongArea').innerHTML = '';
+    // 重置索引
+    currentIndex = 0;
+    // 直接渲染第一道错题
+    nextWrong();
+}
+
+/**
+ * 渲染下一道错题（如果需要按组处理就修改这里的逻辑）
+ */
+function nextWrong() {
+    const area = document.getElementById('wrongArea');
+    area.innerHTML = '';
+    if (currentIndex >= wrongList.length) {
+        area.innerHTML = '<p>错题练习结束。</p>';
+        return;
+    }
+    const g = wrongList[currentIndex];
+    // 下面以“记忆模式”举例，直接给中文 + 6 英文供选
+    const correct = [g.english1, g.english2];
+    // 取两组干扰
+    const others = groupList.filter(x=>x!==g).sort(()=>Math.random()-0.5).slice(0,2);
+    const distractors = others.flatMap(x=>[x.english1,x.english2]);
+    const choices = correct.concat(distractors).sort(()=>Math.random()-0.5);
+
+    let html = `<div class="card">
+    <div>错题 ${currentIndex+1} / ${wrongList.length}</div>
+    <div class="chinese-options"><strong>${g.chinese}</strong></div>
+    <div class="english-options">`;
+    choices.forEach(w=>{
+        html += `<label><input type="checkbox" name="wrong_eng" value="${w}"> ${w}</label><br>`;
+    });
+    html += `</div>
+    <button onclick="submitWrong()">提交</button>
+    <button onclick="nextWrong()">下一题</button>
+  </div>`;
+    area.innerHTML = html;
+}
+
+// 处理错题模式下的提交（示例）
+async function submitWrong() {
+    const g = wrongList[currentIndex];
+    const chosen = Array.from(
+        document.querySelectorAll('input[name="wrong_eng"]:checked')
+    ).map(i=>i.value);
+    const correct = [g.english1, g.english2].slice().sort();
+    const isOk = chosen.slice().sort().join() === correct.join();
+
+    if (!isOk) {
+        // 如果还是答错，就不重复加入
+        await recordWrongGroup(g);
+    } else {
+        // 如果答对了，就从 wrongList 中移除
+        wrongList.splice(currentIndex, 1);
+        await saveUserData();
+        currentIndex--; // 保持当前位置
+    }
+
+    // 直接进入下一题
+    nextWrong();
+}
+
 // script.js 末尾，紧跟函数定义后面加上：
 window.startWrongReview = startWrongReview;
 window.nextWrong        = nextWrong;
