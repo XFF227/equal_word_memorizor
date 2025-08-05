@@ -30,7 +30,12 @@
     <div class="quiz-controls">
         <select id="quizSelect">
             <option value="negative">全部<strong>未掌握</strong>单词（scoreValue < 0）</option>
-            <!-- Date options will be populated via JS -->
+            <!-- Date options populated via JS -->
+        </select>
+        <!-- 模式选择 -->
+        <select id="modeSelect">
+            <option value="memory">记忆模式</option>
+            <option value="hard">困难模式</option>
         </select>
         <button onclick="startQuiz()">开始做题</button>
     </div>

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>Login/Register</title>
+    <title>Login / Register</title>
     <style>
-        body { font-family: Arial; padding: 2em; max-width: 400px; margin: auto; }
+        body { font-family: Arial, sans-serif; padding: 2em; max-width: 400px; margin: auto; }
         input, button { display: block; width: 100%; margin-bottom: 1em; padding: 0.5em; }
     </style>
 </head>
@@ -14,12 +14,12 @@
 <input type="password" id="password" placeholder="Password" required>
 <button onclick="login()">Login</button>
 <button onclick="register()">Register</button>
-
 <p id="message" style="color:red;"></p>
 
 <script>
-    const API_URL = 'https://68912b50447ff4f11fbbe7a1.mockapi.io/users';  // MockAPI 用户资源
-    // 初始单词数据，每组30个词条（两个英文单词和一个中文释义）
+    const API_URL = 'https://68912b50447ff4f11fbbe7a1.mockapi.io/users';
+
+    // 6 组，每组 30 条 [english1, english2, chinese]
     const wordGroups = [
         [["succumb to","yield to","屈服于"], ["singular","unique","独特的"], ["exaggeration","hyperbole","夸张"], ["prescient","prophetic","有先见之明的"], ["realism","verisimilitude","现实主义"], ["irascibility","exasperation","肝火"], ["extremist","zealot","极端主义者"], ["intricate","convoluted","复杂的"], ["fairness","objectivity","公平；公正；公道"], ["unwarranted","groundless","毫无根据的"], ["affable","easygoing","和蔼可亲的"], ["realize","achieve","实现"], ["diffuse","spread","扩散"], ["baseless","untenable","毫无根据的"], ["proclaim","profess","宣布"], ["pugnacious","truculent","好斗的"], ["stave off","forestall","阻止"], ["momentary","evanescent","短暂的"], ["belie","mask","掩饰"], ["yield","engender","产生"], ["limpid","pellucid","清澈的"], ["interdependent","interrelated","相互依赖的"], ["prevalent","widespread","流行"], ["undermine","impair","破坏"], ["original","novel","原来的"], ["rejection of","liberation from","对……的否定"], ["confused","muddled","困惑的"], ["expansion","augmentation","扩张"], ["exalt","valorize","赞美"], ["lull","respite","平息"]],
         [["gratify","please","使满意"], ["cumbersome","unwieldy","笨重的"], ["fractious","restive","脾气暴躁的"], ["snag","hitch","障碍物"], ["adaptability","flexibility","适应性"], ["galvanize","animate","激励"], ["utilitarian","functional","实用的"], ["quiescence","calm","静止"], ["elicit","draw","引出"], ["primitive","rudimentary","原始的"], ["accession to","acquiescence to","加入"], ["somnolent","lethargic","昏昏欲睡的"], ["inferable from","entailed by","可由……推断出"], ["decay","deterioration","衰退"], ["shackle","stifle","束缚"], ["repudiate","recant","拒绝"], ["encomium","tribute","赞辞"], ["unostentatious","modest","低调的"], ["dangerous","perilous","危险的"], ["speculation","conjecture","猜测"], ["disparity","variance","差异"], ["abuse","misuse","滥用"], ["respite","relief","暂缓"], ["portend","predict","预示"], ["pristine","unblemished","原始的"], ["lugubrious","gloomy","悲伤的"], ["heterogeneity","diversity","多样性"], ["champion","defend","支持"], ["sidestep","circumvent","回避"], ["mockery","derision","嘲弄"]],
@@ -30,88 +30,67 @@
     ];
 
     async function login() {
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
+        const u = document.getElementById("username").value.trim();
+        const p = document.getElementById("password").value.trim();
         const msg = document.getElementById("message");
-
+        if (!u || !p) { msg.textContent = "请输入用户名和密码"; return; }
         try {
-            const res = await fetch(`${API_URL}?username=${username}`);
-            const users = await res.json();
-            if (users.length === 0 || users[0].password !== password) {
+            const res = await fetch(`${API_URL}?username=${u}`);
+            const arr = await res.json();
+            if (!arr.length || arr[0].password !== p) {
                 msg.textContent = "Invalid username or password.";
                 return;
             }
-            localStorage.setItem("user", JSON.stringify(users[0]));
+            localStorage.setItem("user", JSON.stringify(arr[0]));
             location.href = "index.html";
         } catch (e) {
-            msg.textContent = "Login failed.";
+            msg.textContent = "登录失败";
             console.error(e);
         }
     }
 
     async function register() {
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
+        const u = document.getElementById("username").value.trim();
+        const p = document.getElementById("password").value.trim();
         const msg = document.getElementById("message");
+        if (!u || !p) { msg.textContent = "请输入用户名和密码"; return; }
 
-        if (!username || !password) {
-            msg.textContent = "请输入用户名和密码";
-            return;
-        }
-
-        let existing = [];
+        // 检查用户名
         try {
-            const checkRes = await fetch(`${API_URL}?username=${username}`);
-            if (checkRes.ok) {
-                const result = await checkRes.json();
-                existing = Array.isArray(result) ? result : [];
-            } else if (checkRes.status !== 404) {
-                throw new Error(`用户检查失败，状态码：${checkRes.status}`);
+            const checkRes = await fetch(`${API_URL}?username=${u}`);
+            const existing = await checkRes.json();
+            if (existing.some(x=>x.username===u)) {
+                msg.textContent = "用户名已存在，请更换。";
+                return;
             }
-        } catch (e) {
-            msg.textContent = "无法连接服务器，检查用户名失败。";
-            console.error("用户查重失败：", e);
+        } catch {
+            msg.textContent = "检查用户名失败，请稍后重试。";
             return;
         }
 
-        if (existing.some(u => u.username === username)) {
-            msg.textContent = "用户名已存在，请更换。";
-            return;
-        }
-
-        // Prepare initial word list data for new user
-        const allWordsList = [];
-        wordGroups.forEach((group, gi) => {
-            const dateLabel = `第${(gi+1).toString().padStart(2,'0')}组`;
-            group.forEach(triple => {
-                const [w1, w2, meaning] = triple;
-                allWordsList.push({ english: w1, chinese: meaning, scoreValue: 0, date: dateLabel });
-                allWordsList.push({ english: w2, chinese: meaning, scoreValue: 0, date: dateLabel });
+        // 双层循环生成每组记录
+        const groups = [];
+        wordGroups.forEach((triples, gi) => {
+            const dateLabel = `第${String(gi+1).padStart(2,'0')}组`;
+            triples.forEach(([e1,e2,ch]) => {
+                groups.push({ english1: e1, english2: e2, chinese: ch, scoreValue: 0, date: dateLabel });
             });
         });
 
-        const userObj = {
-            username,
-            password,
-            word_list: allWordsList,
-            Wrong_list: []
-        };
+        const userObj = { username: u, password: p, word_list: groups, Wrong_list: [] };
 
         try {
             const res = await fetch(API_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type":"application/json"},
                 body: JSON.stringify(userObj)
             });
-            if (!res.ok) {
-                throw new Error(`注册失败，状态码：${res.status}`);
-            }
+            if (!res.ok) throw new Error();
             const newUser = await res.json();
             localStorage.setItem("user", JSON.stringify(newUser));
             location.href = "index.html";
-        } catch (e) {
-            msg.textContent = "注册失败，请稍后再试。";
-            console.error("注册提交失败：", e);
+        } catch {
+            msg.textContent = "注册失败，请稍后重试。";
         }
     }
 </script>
