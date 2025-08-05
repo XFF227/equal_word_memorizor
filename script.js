@@ -72,6 +72,19 @@ async function saveUserData() {
 }
 
 // 渲染“背词”卡片
+/**
+ * 渲染背词卡片：按日期分组、组内按 scoreValue 升序，
+ * 并且每个单词根据 scoreValue 着色
+ */
+
+function getScoreColor(score) {
+    if (score <= -5) return 'red';
+    if (score <= -3) return 'orange';
+    if (score < 0)  return 'orange';
+    if (score === 0) return 'black';
+    if (score <= 3) return 'blue';
+    return 'green';
+}
 function renderFlashcards() {
     const container = document.getElementById('cardsContainer');
     const byDate = {};
@@ -79,17 +92,23 @@ function renderFlashcards() {
         byDate[g.date] = byDate[g.date] || [];
         byDate[g.date].push(g);
     });
-    const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+
+    const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+
     let html = '';
     dates.forEach(date => {
-        html += `<div class="card"><strong>${date}</strong><br>` +
-            byDate[date].map(g=>
-                `${g.english1}=${g.english2} —— ${g.chinese}`
-            ).join('<br>') +
-            `</div>`;
+        byDate[date].sort((a, b) => (a.scoreValue || 0) - (b.scoreValue || 0));
+        html += `<div class="card"><strong>${date}</strong><br>`;
+        byDate[date].forEach(g => {
+            const color = getScoreColor(g.scoreValue || 0);
+            html += `<span style="color:${color}">${g.english1}=${g.english2}</span> —— ${g.chinese}<br>`;
+        });
+        html += `</div>`;
     });
+
     container.innerHTML = html;
 }
+
 
 // 更新做题选日期下拉
 function updateQuizOptions() {
