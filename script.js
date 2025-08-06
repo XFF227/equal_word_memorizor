@@ -87,17 +87,24 @@ function getScoreColor(score) {
 }
 function renderFlashcards() {
     const container = document.getElementById('cardsContainer');
+    if (!container) return;
+
+    // 按日期分组
     const byDate = {};
     groupList.forEach(g => {
         byDate[g.date] = byDate[g.date] || [];
         byDate[g.date].push(g);
     });
 
+    // 日期降序（最新日期先显示）
     const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
+    // 构建 HTML
     let html = '';
     dates.forEach(date => {
-        byDate[date].sort((a, b) => (a.scoreValue || 0) - (b.scoreValue || 0));
+        // 组内按 scoreValue 降序（j 降序）
+        byDate[date].sort((a, b) => (b.scoreValue || 0) - (a.scoreValue || 0));
+
         html += `<div class="card"><strong>${date}</strong><br>`;
         byDate[date].forEach(g => {
             const color = getScoreColor(g.scoreValue || 0);
@@ -108,6 +115,8 @@ function renderFlashcards() {
 
     container.innerHTML = html;
 }
+
+
 
 
 // 更新做题选日期下拉
@@ -505,6 +514,70 @@ async function updateScoreGroup(g, delta) {
     renderFlashcards();
     await saveUserData();
 }
+/**
+ * 打开“批量添加单词”弹窗
+ */
+function showBulkAddModal() {
+    document.getElementById('bulkAddModal').style.display = 'block';
+}
+
+/**
+ * 关闭“批量添加单词”弹窗
+ */
+function closeBulkAdd() {
+    document.getElementById('bulkAddModal').style.display = 'none';
+}
+
+/**
+ * 解析输入，添加到主词表 groupList，以日期为 title，然后渲染并保存
+ */
+async function saveBulkAdd() {
+    const raw = document.getElementById('bulkInput').value.trim();
+    if (!raw) {
+        closeBulkAdd();
+        return;
+    }
+
+    const lines = raw.split(/[\r\n]+/).map(l => l.trim()).filter(l => l);
+    const dateLabel = new Date().toISOString().slice(0, 10);
+
+    for (const line of lines) {
+        let parts;
+        if (line.includes('=')) {
+            parts = line.split('=').map(p => p.trim());
+        } else {
+            parts = line.split(',').map(p => p.trim());
+        }
+        if (parts.length < 3) continue;
+
+        const [e1, e2, ...rest] = parts;
+        const ch = rest.join(line.includes('=') ? '=' : ',');
+        // 先插入到最前面（或 push 到末尾都行，只要后面有排序）
+        groupList.unshift({
+            english1: e1,
+            english2: e2,
+            chinese: ch,
+            scoreValue: 0,
+            date: dateLabel
+        });
+        wordMap[e1] = ch;
+        wordMap[e2] = ch;
+    }
+
+    // 按 date 字段升序排序（最早的日期在最前）
+    groupList.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    renderFlashcards();
+    updateQuizOptions();
+    await saveUserData();
+    closeBulkAdd();
+}
+
+
+// 全局暴露，供 HTML onclick 调用
+window.showBulkAddModal = showBulkAddModal;
+window.closeBulkAdd     = closeBulkAdd;
+window.saveBulkAdd      = saveBulkAdd;
 
 
 
