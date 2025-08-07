@@ -422,12 +422,22 @@ function nextWrong() {
     html += `</div>
     <button id="submitWrongBtn" onclick="submitWrong()">提交</button>
     <button id="giveUpWrongBtn" onclick="giveUpWrong()">我不会</button>
+    <button onclick="deleteThisWrong()" style="margin-left:0.5em;background:#e74c3c;">删除本题</button>
     <button id="nextWrongBtn" onclick="nextWrong()" style="display:none;">下一题</button>
   </div>`;
 
     area.innerHTML = html;
 }
 
+async function deleteThisWrong() {
+    // 删除 currentIndex-1 对应的条目
+    wrongList.splice(currentIndex, 1);
+    await saveUserData();
+    // 将索引回退，以便 nextWrong 读取正确位置
+    currentIndex = Math.max(0, currentIndex - 1);
+    // 直接出下一题
+    nextWrong();
+}
 // —— 用户提交答案 ——
 async function submitWrong() {
     const g = wrongList[currentIndex];
