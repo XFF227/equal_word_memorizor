@@ -462,7 +462,7 @@ async function submitWrong() {
 
     // 如果答对了，被移除了则 currentIndex 保持原来位置，
     // 如果答错了，currentIndex++ 留到下一题
-    if (!isOk) currentIndex++;
+    currentIndex++;
 
     // 显示“下一题”
     document.getElementById('nextWrongBtn').style.display = 'inline';
