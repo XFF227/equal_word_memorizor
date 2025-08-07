@@ -449,19 +449,6 @@ async function submitWrong() {
     document.getElementById('submitWrongBtn').style.display = 'none';
     document.getElementById('giveUpWrongBtn').style.display = 'none';
 
-    // 对/错处理
-    if (isOk) {
-        // 回合得分 +1
-        await updateScoreGroup(g, 1);
-        // 从错题集中移除，不推进 currentIndex
-        wrongList.splice(currentIndex, 1);
-        await saveUserData();
-    } else {
-        // 回合扣分 -1
-        await updateScoreGroup(g, -1);
-        // 已经在 wrongList，无需重复添加
-    }
-
     // 高亮正确答案，并显示中文释义
     document.querySelectorAll('.english-options label').forEach(lbl => {
         const w = lbl.querySelector('input').value;
